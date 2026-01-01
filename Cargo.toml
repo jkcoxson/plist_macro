@@ -1,5 +1,6 @@
 [package]
 name = "plist-macro"
+description = "Macros and utilities for manipulating plists"
 version = "0.1.0"
 edition = "2024"
 authors = ["Jackson Coxson"]
