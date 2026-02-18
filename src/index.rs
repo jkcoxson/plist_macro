@@ -1,9 +1,10 @@
 // Jackson Coxson
 
-use plist::Value;
+use plist::{Dictionary, Value};
 
 pub trait PlistIndex {
     fn index_into<'v>(&self, v: &'v Value) -> Option<&'v Value>;
+    fn index_into_dict<'v>(&self, d: &'v Dictionary) -> Option<&'v Value>;
 }
 
 impl PlistIndex for &str {
@@ -12,6 +13,10 @@ impl PlistIndex for &str {
             Value::Dictionary(dict) => dict.get(self),
             _ => None,
         }
+    }
+
+    fn index_into_dict<'v>(&self, d: &'v Dictionary) -> Option<&'v Value> {
+        d.get(self)
     }
 }
 
@@ -22,6 +27,10 @@ impl PlistIndex for usize {
             _ => None,
         }
     }
+
+    fn index_into_dict<'v>(&self, _: &'v Dictionary) -> Option<&'v Value> {
+        None
+    }
 }
 
 pub trait PlistExt {
@@ -31,6 +40,12 @@ pub trait PlistExt {
 impl PlistExt for Value {
     fn get_by<I: PlistIndex>(&self, index: I) -> Option<&Value> {
         index.index_into(self)
+    }
+}
+
+impl PlistExt for Dictionary {
+    fn get_by<I: PlistIndex>(&self, index: I) -> Option<&Value> {
+        index.index_into_dict(self)
     }
 }
 
@@ -54,6 +69,22 @@ mod tests {
                 .and_then(|x| x.get_by("nested"))
                 .and_then(|x| x.as_unsigned_integer()),
             Some(420)
+        );
+
+        let p = crate::plist!(dict {
+            "hi mom": {
+                "look": {
+                    "nested": 123
+                }
+            }
+        });
+
+        assert_eq!(
+            p.get_by("hi mom")
+                .and_then(|x| x.get_by("look"))
+                .and_then(|x| x.get_by("nested"))
+                .and_then(|x| x.as_unsigned_integer()),
+            Some(123)
         );
     }
 }
